@@ -1,5 +1,5 @@
 # backend/models.py
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Table, Index
 from sqlalchemy.orm import relationship
 from db import Base
 
@@ -31,6 +31,7 @@ class Location(Base):
 
 class Item(Base):
     __tablename__ = "items"
+
     item_id = Column(Integer, primary_key=True)
     name = Column(String(100))
     category_id = Column(Integer, ForeignKey("categories.category_id"))
@@ -43,3 +44,10 @@ class Item(Base):
     category = relationship("Category")
     location = relationship("Location")
     users = relationship("User", secondary=UserItems, back_populates="items")
+
+    __table_args__ = (
+        Index("idx_items_qty_min", "qty", "min_qty"),
+        Index("idx_items_expiry", "expiry_date"),
+        Index("idx_items_category", "category_id"),
+        Index("idx_items_location", "location_id"),
+    )

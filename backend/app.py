@@ -346,6 +346,32 @@ def report_summary():
             "expiring": session.query(Item).filter(Item.expiry_date != None).count()
         })
 
+@app.post("/users/<int:user_id>/consume/<int:item_id>")
+def consume_item(user_id, item_id):
+    with Session(engine) as session:
+        user = session.get(User, user_id)
+        item = session.get(Item, item_id)
+
+        if not user or not item:
+            return jsonify({"error": "User or item not found"}), 404
+
+        if item.qty <= 0:
+            return jsonify({"error": "Item out of stock"}), 400
+
+        # ---- CONCURRENCY-SAFE UPDATE ----
+        item.qty -= 1
+
+        # record who consumed it (many-to-many)
+        user.items.append(item)
+
+        session.commit()
+
+        return jsonify({
+            "message": f"{user.name} consumed 1 {item.name}",
+            "remaining_qty": item.qty
+        })
+
+
 
 # ----------------------------------------------------------
 # RUN

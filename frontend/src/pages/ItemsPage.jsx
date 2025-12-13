@@ -4,6 +4,8 @@ export default function ItemsPage() {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
 
   // Form for adding items
   const [form, setForm] = useState({
@@ -27,6 +29,7 @@ export default function ItemsPage() {
     fetchItems();
     fetchCategories();
     fetchLocations();
+    fetchUsers();
   }, []);
 
   const fetchItems = () => {
@@ -39,6 +42,10 @@ export default function ItemsPage() {
 
   const fetchLocations = () => {
     fetch(`${API}/locations`).then(res => res.json()).then(setLocations);
+  };
+
+  const fetchUsers = () => {
+    fetch(`${API}/users`).then(res => res.json()).then(setUsers);
   };
 
   // ------------------------
@@ -132,6 +139,29 @@ export default function ItemsPage() {
     fetchLocations();
   };
 
+  const consumeItem = async (itemId) => {
+  if (!selectedUser) {
+    alert("Select a user first");
+    return;
+  }
+
+  const res = await fetch(`${API}/users/${selectedUser}/consume/${itemId}`, {
+    method: "POST"
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error);
+  } else {
+    console.log(data.message);
+  }
+
+  fetchItems();
+};
+
+
+
   // ------------------------
   // Render UI
   // ------------------------
@@ -139,6 +169,28 @@ export default function ItemsPage() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Manage Items</h2>
+
+      <div style={styles.box}>
+  <h3>Consume Items (Concurrency Demo)</h3>
+
+  <select
+    value={selectedUser}
+    onChange={(e) => setSelectedUser(e.target.value)}
+    style={styles.input}
+  >
+    <option value="">Select User</option>
+    {users.map(u => (
+      <option key={u.user_id} value={u.user_id}>
+        {u.name}
+      </option>
+    ))}
+  </select>
+
+  <p style={{ fontSize: 12, color: "#555" }}>
+    Multiple users can consume the same inventory concurrently.
+  </p>
+</div>
+
 
       {/* Add New Item */}
       <div style={styles.box}>
@@ -205,6 +257,7 @@ export default function ItemsPage() {
                   <td>
                     <button onClick={() => updateItem(i.item_id)} style={styles.btn}>Save</button>
                     <button onClick={() => setEditingId(null)} style={styles.smallBtn}>Cancel</button>
+
                   </td>
                 </>
               ) : (
@@ -217,8 +270,30 @@ export default function ItemsPage() {
                   <td>{i.category}</td>
                   <td>{i.location}</td>
                   <td>
-                    <button onClick={() => startEditing(i)} style={styles.smallBtn}>Edit</button>
-                    <button onClick={() => deleteItem(i.item_id)} style={styles.smallBtn}>Delete</button>
+                    <td>
+  <button
+    onClick={() => startEditing(i)}
+    style={styles.smallBtn}
+  >
+    Edit
+  </button>
+
+  <button
+    onClick={() => deleteItem(i.item_id)}
+    style={styles.smallBtn}
+  >
+    Delete
+  </button>
+
+  <button
+    disabled={!selectedUser}
+    onClick={() => consumeItem(i.item_id)}
+    style={styles.smallBtn}
+  >
+    Consume
+  </button>
+</td>
+
                   </td>
                 </>
               )}
